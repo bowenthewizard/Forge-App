@@ -188,6 +188,10 @@ export const useStore = create<StoreState>((set, get) => ({
       workoutStartedAt: null,
       workoutElapsed: 0,
       tab: "summary",
+      restActive: false,
+      restSeconds: 0,
+      restMax: 180,
+      restExercise: "",
       exercises: DEMO_PUSH_DAY.map((e) => ({
         ...e,
         sets: e.sets.map((s) => ({ ...s, done: false, weight: "", reps: "" })),
