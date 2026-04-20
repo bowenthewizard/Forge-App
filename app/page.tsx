@@ -15,10 +15,15 @@ export default function Page() {
 
   return (
     // Phone-sized container, centered on larger screens
-    <main className="mx-auto max-w-md min-h-screen flex flex-col bg-bg">
+    <main className="mx-auto flex w-full max-w-md min-h-screen flex-col overflow-x-hidden bg-bg">
       <StatusBar />
 
-      <div className="flex-1 overflow-y-auto no-scrollbar">
+      <div
+        className="flex-1 overflow-y-auto no-scrollbar"
+        style={{
+          paddingBottom: "calc(76px + env(safe-area-inset-bottom, 0px))",
+        }}
+      >
         {tab === "home" && <HomeScreen />}
         {(tab === "workout" || tab === "workout-logging") && <WorkoutScreen />}
         {tab === "library" && <LibraryScreen />}

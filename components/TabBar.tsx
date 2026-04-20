@@ -17,14 +17,15 @@ export function TabBar() {
 
   return (
     <nav
-      className="flex-shrink-0 flex items-start pt-2.5 h-[72px] border-t border-white/[0.07]"
+      className="fixed bottom-0 left-0 right-0 z-50 flex w-full max-w-full flex-col border-t border-[#1F1F1F]"
       style={{
-        // Glass treatment — per design spec
-        backgroundColor: "rgba(8, 8, 8, 0.92)",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        backgroundColor: "rgba(10, 10, 10, 0.85)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
       }}
     >
+      <div className="flex h-[72px] flex-shrink-0 items-start pt-2.5">
       {TABS.map(({ id, label, Icon }) => {
         const active =
           id === "workout"
@@ -52,6 +53,7 @@ export function TabBar() {
           </button>
         );
       })}
+      </div>
     </nav>
   );
 }
