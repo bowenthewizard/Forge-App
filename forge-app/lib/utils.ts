@@ -1,0 +1,13 @@
+export function formatDuration(totalSeconds: number): string {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+export function formatClock(): string {
+  const now = new Date();
+  const h = now.getHours() % 12 || 12;
+  return `${h}:${String(now.getMinutes()).padStart(2, "0")}`;
+}
