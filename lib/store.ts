@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { supabase } from "@/lib/supabase";
 
 // ---- TYPES ----
 export type ExerciseSet = {
@@ -18,7 +19,24 @@ export type Exercise = {
   sets: ExerciseSet[];
 };
 
-export type Tab = "home" | "workout" | "library" | "profile";
+export type CompletedWorkoutSnapshot = {
+  name: string;
+  durationSeconds: number;
+  totalVolume: number;
+  exercises: Array<{
+    name: string;
+    equipment: string;
+    sets: Array<{
+      n: number;
+      weight: string;
+      reps: string;
+    }>;
+  }>;
+  prs: Array<{ exerciseName: string; weight: number; reps: number }>;
+  volumeDeltaVsLastTime: number | null;
+};
+
+export type Tab = "home" | "workout" | "library" | "profile" | "summary";
 
 type StoreState = {
   // Navigation
@@ -29,9 +47,12 @@ type StoreState = {
   workoutName: string;
   workoutStartedAt: number | null;
   workoutElapsed: number;
+  isSaving: boolean;
+  completedWorkout: CompletedWorkoutSnapshot | null;
   tickWorkout: () => void;
   startWorkout: () => void;
-  finishWorkout: () => void;
+  finishWorkout: () => Promise<void>;
+  dismissSummary: () => void;
 
   // Exercises
   exercises: Exercise[];
@@ -115,6 +136,8 @@ export const useStore = create<StoreState>((set, get) => ({
   workoutName: "Push Day",
   workoutStartedAt: null,
   workoutElapsed: 0,
+  isSaving: false,
+  completedWorkout: null,
   tickWorkout: () => {
     const started = get().workoutStartedAt;
     if (started) set({ workoutElapsed: Math.floor((Date.now() - started) / 1000) });
@@ -126,17 +149,106 @@ export const useStore = create<StoreState>((set, get) => ({
       tab: "workout",
     });
   },
-  finishWorkout: () => {
+  finishWorkout: async () => {
+    set({ isSaving: true });
+
+    const { workoutName, workoutStartedAt, workoutElapsed, exercises } = get();
+    const totalVolume = exercises.reduce((exerciseSum, exercise) => {
+      const setVolume = exercise.sets.reduce((sum, workoutSet) => {
+        if (!workoutSet.done) return sum;
+        const weight = parseFloat(workoutSet.weight);
+        const reps = parseInt(workoutSet.reps, 10);
+        if (!Number.isFinite(weight) || !Number.isFinite(reps)) return sum;
+        return sum + weight * reps;
+      }, 0);
+
+      return exerciseSum + setVolume;
+    }, 0);
+    const roundedTotalVolume = Math.round(totalVolume);
+
+    const completedWorkout: CompletedWorkoutSnapshot = {
+      name: workoutName,
+      durationSeconds: workoutElapsed,
+      totalVolume: roundedTotalVolume,
+      exercises: exercises
+        .map((exercise) => ({
+          name: exercise.name,
+          equipment: exercise.equipment,
+          sets: exercise.sets
+            .filter((workoutSet) => workoutSet.done)
+            .map((workoutSet) => ({
+              n: workoutSet.n,
+              weight: workoutSet.weight,
+              reps: workoutSet.reps,
+            })),
+        }))
+        .filter((exercise) => exercise.sets.length > 0),
+      prs: [],
+      volumeDeltaVsLastTime: null,
+    };
+    set({ completedWorkout });
+
+    try {
+      const sessionPayload = {
+        user_id: "demo-user",
+        name: workoutName,
+        started_at: workoutStartedAt
+          ? new Date(workoutStartedAt).toISOString()
+          : new Date().toISOString(),
+        finished_at: new Date().toISOString(),
+        duration_seconds: workoutElapsed,
+        total_volume_lbs: roundedTotalVolume,
+      };
+
+      const { data: session, error: sessionError } = await supabase
+        .from("workout_sessions")
+        .insert(sessionPayload)
+        .select()
+        .single();
+
+      if (sessionError) {
+        throw sessionError;
+      }
+
+      if (session) {
+        const setsArray = exercises.flatMap((exercise) =>
+          exercise.sets
+            .filter((workoutSet) => workoutSet.done && workoutSet.weight !== "" && workoutSet.reps !== "")
+            .map((workoutSet) => ({
+              workout_session_id: session.id,
+              exercise_name: exercise.name,
+              equipment_type: exercise.equipment,
+              set_number: workoutSet.n,
+              weight: parseFloat(workoutSet.weight),
+              reps: parseInt(workoutSet.reps, 10),
+              completed: true,
+            }))
+            .filter((setRow) => Number.isFinite(setRow.weight) && Number.isFinite(setRow.reps))
+        );
+
+        if (setsArray.length > 0) {
+          const { error: setsError } = await supabase.from("workout_sets").insert(setsArray);
+          if (setsError) {
+            throw setsError;
+          }
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    }
+
     set({
       workoutStartedAt: null,
       workoutElapsed: 0,
-      tab: "home",
+      tab: "summary",
       exercises: DEMO_PUSH_DAY.map((e) => ({
         ...e,
         sets: e.sets.map((s) => ({ ...s, done: false, weight: "", reps: "" })),
       })),
+      isSaving: false,
     });
   },
+  dismissSummary: () => set({ completedWorkout: null, tab: "home" }),
 
   // Exercises
   exercises: DEMO_PUSH_DAY,

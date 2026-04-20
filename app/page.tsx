@@ -7,6 +7,7 @@ import { HomeScreen } from "@/components/screens/HomeScreen";
 import { WorkoutScreen } from "@/components/screens/WorkoutScreen";
 import { LibraryScreen } from "@/components/screens/LibraryScreen";
 import { ProfileScreen } from "@/components/screens/ProfileScreen";
+import { PostWorkoutSummaryScreen } from "@/components/screens/PostWorkoutSummaryScreen";
 import { useStore } from "@/lib/store";
 
 export default function Page() {
@@ -22,10 +23,11 @@ export default function Page() {
         {tab === "workout" && <WorkoutScreen />}
         {tab === "library" && <LibraryScreen />}
         {tab === "profile" && <ProfileScreen />}
+        {tab === "summary" && <PostWorkoutSummaryScreen />}
       </div>
 
       <RestTimerMini />
-      <TabBar />
+      {tab !== "summary" && <TabBar />}
     </main>
   );
 }
