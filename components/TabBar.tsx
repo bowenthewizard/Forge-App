@@ -17,10 +17,10 @@ export function TabBar() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 flex w-full max-w-full flex-col border-t border-[#1F1F1F]"
+      className="fixed bottom-0 left-0 right-0 z-50 w-full max-w-md mx-auto border-t border-[#1F1F1F]"
       style={{
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
-        backgroundColor: "rgba(10, 10, 10, 0.85)",
+        backgroundColor: "rgba(10,10,10,0.85)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
       }}
