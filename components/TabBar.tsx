@@ -26,7 +26,10 @@ export function TabBar() {
       }}
     >
       {TABS.map(({ id, label, Icon }) => {
-        const active = tab === id;
+        const active =
+          id === "workout"
+            ? tab === "workout" || tab === "workout-logging"
+            : tab === id;
         return (
           <button
             key={id}

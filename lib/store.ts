@@ -38,7 +38,13 @@ export type CompletedWorkoutSnapshot = {
   volumeDeltaVsLastTime: number | null;
 };
 
-export type Tab = "home" | "workout" | "library" | "profile" | "summary";
+export type Tab =
+  | "home"
+  | "workout"
+  | "workout-logging"
+  | "library"
+  | "profile"
+  | "summary";
 
 type StoreState = {
   // Navigation
@@ -90,11 +96,11 @@ export const useStore = create<StoreState>((set, get) => ({
     if (started) set({ workoutElapsed: Math.floor((Date.now() - started) / 1000) });
   },
   startWorkout: () => {
-    set({
+    set((state) => ({
       workoutStartedAt: Date.now(),
       workoutElapsed: 0,
-      tab: "workout",
-    });
+      tab: state.tab === "workout-logging" ? "workout-logging" : "workout",
+    }));
   },
   finishWorkout: async () => {
     set({ isSaving: true });

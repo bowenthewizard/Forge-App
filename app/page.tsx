@@ -20,7 +20,7 @@ export default function Page() {
 
       <div className="flex-1 overflow-y-auto no-scrollbar">
         {tab === "home" && <HomeScreen />}
-        {tab === "workout" && <WorkoutScreen />}
+        {(tab === "workout" || tab === "workout-logging") && <WorkoutScreen />}
         {tab === "library" && <LibraryScreen />}
         {tab === "profile" && <ProfileScreen />}
         {tab === "summary" && <PostWorkoutSummaryScreen />}

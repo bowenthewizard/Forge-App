@@ -194,3 +194,55 @@ export function getMonthOverMonthChange(year: number, month: number) {
   }
   return Math.round(((currentTotal - previousTotal) / previousTotal) * 100);
 }
+
+export type TemplateType = {
+  id: string;
+  name: string;
+  muscleGroups: string[];
+  estimatedDurationMin: number;
+  exerciseCount: number;
+};
+
+export const DEMO_SPLIT = {
+  id: "three-day-split",
+  name: "3 Day Split",
+  daysPerWeek: 3,
+  structure: [
+    { dayOfWeek: 1, templateId: "push-day" },
+    { dayOfWeek: 3, templateId: "pull-day" },
+    { dayOfWeek: 5, templateId: "leg-day" },
+  ],
+};
+
+export const DEMO_TEMPLATES = {
+  "push-day": {
+    id: "push-day",
+    name: "Push Day",
+    muscleGroups: ["Chest", "Shoulders", "Triceps"],
+    estimatedDurationMin: 60,
+    exerciseCount: 5,
+  },
+  "pull-day": {
+    id: "pull-day",
+    name: "Pull Day",
+    muscleGroups: ["Back", "Biceps"],
+    estimatedDurationMin: 55,
+    exerciseCount: 5,
+  },
+  "leg-day": {
+    id: "leg-day",
+    name: "Leg Day",
+    muscleGroups: ["Quads", "Hamstrings", "Glutes"],
+    estimatedDurationMin: 70,
+    exerciseCount: 6,
+  },
+} as const satisfies Record<string, TemplateType>;
+
+// Hardcoded completed sessions for this week (will be replaced by Supabase data in next prompt)
+export const DEMO_COMPLETED_THIS_WEEK: Array<{
+  dayOfWeek: number;
+  templateName: string;
+  totalVolumeLbs: number;
+  durationMinutes: number;
+  daysAgo: number;
+}> = [];
