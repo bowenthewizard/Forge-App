@@ -11,6 +11,12 @@ Things noticed during real usage that need fixing. Priority from top to bottom.
 ## 🟡 Queued
 
 _(add new items here as you notice them)_
+- [ ] Show "+X lbs vs last time" delta under the hero volume number (needs history)
+- [ ] Show "NEW PR" callout card when a PR is hit (needs history)
+- [ ] Show per-exercise "+X lbs vs last time" in exercise breakdown cards (needs history)
+- [ ] Progressive overload suggestion mode — recommend a weight bump based on last performance
+- [ ] RPE (rate of perceived exertion) tracking per set
+- [ ] Coaching program templates (5/3/1, Starting Strength, etc) with automated weight prescriptions
 
 ## ✅ Done
 
