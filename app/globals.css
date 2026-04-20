@@ -45,6 +45,11 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
+input::placeholder {
+  color: #4B5563;
+  opacity: 1;
+}
+
 /* Custom utility: uppercase section labels */
 .section-label {
   font-size: 11px;

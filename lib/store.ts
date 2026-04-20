@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { supabase } from "@/lib/supabase";
+import { DEMO_PUSH_DAY } from "@/lib/demo-data";
 
 // ---- TYPES ----
 export type ExerciseSet = {
@@ -16,6 +17,7 @@ export type Exercise = {
   id: number;
   name: string;
   equipment: "Barbell" | "Dumbbell" | "Machine" | "Cables" | "Bands" | "Bodyweight";
+  muscleGroups: string[];
   sets: ExerciseSet[];
 };
 
@@ -59,6 +61,7 @@ type StoreState = {
   toggleSet: (exIdx: number, setIdx: number) => void;
   updateSet: (exIdx: number, setIdx: number, field: "weight" | "reps", value: string) => void;
   addSet: (exIdx: number) => void;
+  completeAllSets: (exerciseIdx: number) => void;
 
   // Rest timer
   restActive: boolean;
@@ -69,62 +72,6 @@ type StoreState = {
   tickRest: () => void;
   skipRest: () => void;
 };
-
-// ---- DEMO DATA ----
-// TODO: replace with real persisted data later
-const DEMO_PUSH_DAY: Exercise[] = [
-  {
-    id: 0,
-    name: "Bench Press",
-    equipment: "Barbell",
-    sets: [
-      { n: 1, prev: "225 × 8", weight: "", reps: "", done: false },
-      { n: 2, prev: "225 × 8", weight: "", reps: "", done: false },
-      { n: 3, prev: "225 × 8", weight: "", reps: "", done: false },
-      { n: 4, prev: "225 × 8", weight: "", reps: "", done: false },
-    ],
-  },
-  {
-    id: 1,
-    name: "Overhead Press",
-    equipment: "Barbell",
-    sets: [
-      { n: 1, prev: "135 × 6", weight: "", reps: "", done: false },
-      { n: 2, prev: "135 × 6", weight: "", reps: "", done: false },
-      { n: 3, prev: "135 × 6", weight: "", reps: "", done: false },
-    ],
-  },
-  {
-    id: 2,
-    name: "Incline DB Press",
-    equipment: "Dumbbell",
-    sets: [
-      { n: 1, prev: "70s × 10", weight: "", reps: "", done: false },
-      { n: 2, prev: "70s × 10", weight: "", reps: "", done: false },
-      { n: 3, prev: "70s × 10", weight: "", reps: "", done: false },
-    ],
-  },
-  {
-    id: 3,
-    name: "Lateral Raise",
-    equipment: "Dumbbell",
-    sets: [
-      { n: 1, prev: "25s × 15", weight: "", reps: "", done: false },
-      { n: 2, prev: "25s × 15", weight: "", reps: "", done: false },
-      { n: 3, prev: "25s × 15", weight: "", reps: "", done: false },
-    ],
-  },
-  {
-    id: 4,
-    name: "Tricep Pushdown",
-    equipment: "Cables",
-    sets: [
-      { n: 1, prev: "60 × 12", weight: "", reps: "", done: false },
-      { n: 2, prev: "60 × 12", weight: "", reps: "", done: false },
-      { n: 3, prev: "60 × 12", weight: "", reps: "", done: false },
-    ],
-  },
-];
 
 // ---- STORE ----
 export const useStore = create<StoreState>((set, get) => ({
@@ -251,16 +198,27 @@ export const useStore = create<StoreState>((set, get) => ({
   dismissSummary: () => set({ completedWorkout: null, tab: "home" }),
 
   // Exercises
-  exercises: DEMO_PUSH_DAY,
+  exercises: structuredClone(DEMO_PUSH_DAY) as Exercise[],
   toggleSet: (exIdx, setIdx) => {
     const exercises = structuredClone(get().exercises);
     const s = exercises[exIdx].sets[setIdx];
-    s.done = !s.done;
-    // If completing and fields are empty, auto-fill from previous
-    if (s.done) {
-      if (!s.weight) s.weight = s.prev.split("×")[0].trim().replace(/s$/, "");
-      if (!s.reps) s.reps = s.prev.split("×")[1]?.trim() ?? "";
+    const willBeDone = !s.done;
+
+    if (willBeDone) {
+      // If weight or reps missing, auto-fill from prev
+      if (!s.weight || !s.reps) {
+        const prev = s.prev || "";
+        const parts = prev.split("×").map((p) => p.trim());
+        if (parts.length === 2) {
+          const w = parts[0].replace(/[^0-9.]/g, "");
+          const r = parts[1].replace(/[^0-9]/g, "");
+          if (!s.weight) s.weight = w;
+          if (!s.reps) s.reps = r;
+        }
+      }
     }
+
+    s.done = willBeDone;
     set({ exercises });
     if (s.done) {
       get().startRest(exercises[exIdx].name);
@@ -284,6 +242,29 @@ export const useStore = create<StoreState>((set, get) => ({
     });
     set({ exercises });
   },
+  completeAllSets: (exerciseIdx) =>
+    set((state) => {
+      const newExercises = [...state.exercises];
+      const exercise = newExercises[exerciseIdx];
+      if (!exercise) return { exercises: newExercises };
+      exercise.sets = exercise.sets.map((s) => {
+        if (s.done) return s;
+        let weight = s.weight;
+        let reps = s.reps;
+        if (!weight || !reps) {
+          const prev = s.prev || "";
+          const parts = prev.split("×").map((p) => p.trim());
+          if (parts.length === 2) {
+            const w = parts[0].replace(/[^0-9.]/g, "");
+            const r = parts[1].replace(/[^0-9]/g, "");
+            if (!weight) weight = w;
+            if (!reps) reps = r;
+          }
+        }
+        return { ...s, weight, reps, done: true };
+      });
+      return { exercises: newExercises };
+    }),
 
   // Rest timer
   restActive: false,

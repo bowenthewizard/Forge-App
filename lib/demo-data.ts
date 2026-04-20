@@ -2,6 +2,79 @@ export const weeklyVolume = [12400, 0, 18200, 0, 15100, 22700, 10000];
 
 export const weekTrendPercent = -2;
 
+type DemoExercise = {
+  id: number;
+  name: string;
+  equipment: "Barbell" | "Dumbbell" | "Machine" | "Cables" | "Bands" | "Bodyweight";
+  muscleGroups: string[];
+  sets: Array<{
+    n: number;
+    prev: string;
+    weight: string;
+    reps: string;
+    done: boolean;
+  }>;
+};
+
+export const DEMO_PUSH_DAY: DemoExercise[] = [
+  {
+    id: 0,
+    name: "Bench Press",
+    equipment: "Barbell",
+    muscleGroups: ["Chest", "Triceps"],
+    sets: [
+      { n: 1, prev: "225 × 8", weight: "", reps: "", done: false },
+      { n: 2, prev: "225 × 8", weight: "", reps: "", done: false },
+      { n: 3, prev: "225 × 8", weight: "", reps: "", done: false },
+      { n: 4, prev: "225 × 8", weight: "", reps: "", done: false },
+    ],
+  },
+  {
+    id: 1,
+    name: "Overhead Press",
+    equipment: "Barbell",
+    muscleGroups: ["Shoulders", "Triceps"],
+    sets: [
+      { n: 1, prev: "135 × 6", weight: "", reps: "", done: false },
+      { n: 2, prev: "135 × 6", weight: "", reps: "", done: false },
+      { n: 3, prev: "135 × 6", weight: "", reps: "", done: false },
+    ],
+  },
+  {
+    id: 2,
+    name: "Incline DB Press",
+    equipment: "Dumbbell",
+    muscleGroups: ["Chest", "Shoulders"],
+    sets: [
+      { n: 1, prev: "70s × 10", weight: "", reps: "", done: false },
+      { n: 2, prev: "70s × 10", weight: "", reps: "", done: false },
+      { n: 3, prev: "70s × 10", weight: "", reps: "", done: false },
+    ],
+  },
+  {
+    id: 3,
+    name: "Lateral Raise",
+    equipment: "Dumbbell",
+    muscleGroups: ["Shoulders"],
+    sets: [
+      { n: 1, prev: "25s × 15", weight: "", reps: "", done: false },
+      { n: 2, prev: "25s × 15", weight: "", reps: "", done: false },
+      { n: 3, prev: "25s × 15", weight: "", reps: "", done: false },
+    ],
+  },
+  {
+    id: 4,
+    name: "Tricep Pushdown",
+    equipment: "Cables",
+    muscleGroups: ["Triceps"],
+    sets: [
+      { n: 1, prev: "60 × 12", weight: "", reps: "", done: false },
+      { n: 2, prev: "60 × 12", weight: "", reps: "", done: false },
+      { n: 3, prev: "60 × 12", weight: "", reps: "", done: false },
+    ],
+  },
+];
+
 export const latestPR = {
   exercise: "Bench Press",
   weight: 225,
