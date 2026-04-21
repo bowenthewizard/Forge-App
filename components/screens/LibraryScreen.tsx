@@ -5,7 +5,19 @@ import { Search, ChevronRight, Plus, Dumbbell, Sparkles, Pencil, Link2, X } from
 import clsx from "clsx";
 import { EXERCISES } from "@/lib/data/exercises";
 
-const FILTERS = ["All", "Push", "Pull", "Legs", "Upper", "Full Body"];
+const FILTERS = [
+  "All",
+  "Push",
+  "Pull",
+  "Legs",
+  "Upper",
+  "Lower",
+  "Full Body",
+  "Core",
+  "Cardio",
+  "Pilates",
+  "Stretch",
+];
 const SUB_TABS = [
   { label: "My Routines", value: "my" },
   { label: "Browse", value: "browse" },
@@ -234,101 +246,76 @@ export function LibraryScreen() {
       </div>
 
       {sheetOpen && (
-        <>
-          {/* backdrop */}
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6 animate-fade-in">
+          {/* Blurred + dimmed backdrop */}
           <div
             onClick={() => setSheetOpen(false)}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-fade-in"
+            className="absolute inset-0 bg-black/50 backdrop-blur-md"
           />
-          {/* sheet */}
-          <div className="fixed left-0 right-0 bottom-0 z-50 bg-surface/95 backdrop-blur-xl border-t border-white/10 rounded-t-[24px] px-4 pt-3 pb-8 animate-slide-up">
-            {/* drag handle */}
-            <div className="w-9 h-1 bg-white/20 rounded-full mx-auto mb-4" />
 
+          {/* Glass modal */}
+          <div className="relative w-full max-w-sm bg-surface/85 backdrop-blur-2xl rounded-[24px] px-4 pt-5 pb-5 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.5)]">
+            {/* Close button */}
             <button
               onClick={() => setSheetOpen(false)}
-              className="absolute top-3 right-4 p-1.5 rounded-full text-text-tertiary hover:text-text-primary hover:bg-white/5 transition-colors"
+              className="absolute top-3.5 right-3.5 p-1 text-text-tertiary hover:text-text-primary transition-colors"
               aria-label="Close"
             >
-              <X size={16} />
+              <X size={18} />
             </button>
 
-            <div className="text-center mb-5">
-              <div className="text-base font-semibold text-text-primary">
-                New routine
-              </div>
-              <div className="text-xs text-text-secondary mt-0.5">
-                Choose how to create it
-              </div>
+            {/* Header */}
+            <div className="text-center mb-5 mt-1">
+              <div className="text-base font-semibold text-text-primary">New routine</div>
+              <div className="text-xs text-text-secondary mt-0.5">Choose how to create it</div>
             </div>
 
-            {/* Option 1: Build with AI */}
+            {/* Option 1 */}
             <button
-              onClick={() => {
-                setSheetOpen(false);
-                alert("Build with AI coming soon");
-              }}
-              className="w-full flex items-center gap-3 p-3 bg-bg rounded-[12px] mb-2 border border-white/5 hover:bg-surface2 transition-colors text-left"
+              onClick={() => { setSheetOpen(false); alert("Build with AI coming soon"); }}
+              className="w-full flex items-center gap-3 p-3 bg-white/5 rounded-[14px] mb-2 border border-white/5 hover:bg-white/10 transition-colors text-left"
             >
-              <div className="w-9 h-9 rounded-[10px] bg-purple-500/18 flex items-center justify-center flex-shrink-0">
+              <div className="w-9 h-9 rounded-[10px] bg-purple-500/20 flex items-center justify-center flex-shrink-0">
                 <Sparkles size={18} className="text-purple-400" strokeWidth={2} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-text-primary">
-                  Build with AI
-                </div>
-                <div className="text-xs text-text-secondary mt-0.5">
-                  Describe your goal, AI creates it
-                </div>
+                <div className="text-sm font-semibold text-text-primary">Build with AI</div>
+                <div className="text-xs text-text-secondary mt-0.5">Describe your goal, AI creates it</div>
               </div>
               <ChevronRight size={16} className="text-text-tertiary flex-shrink-0" />
             </button>
 
-            {/* Option 2: Custom */}
+            {/* Option 2 */}
             <button
-              onClick={() => {
-                setSheetOpen(false);
-                alert("Custom builder coming soon");
-              }}
-              className="w-full flex items-center gap-3 p-3 bg-bg rounded-[12px] mb-2 border border-white/5 hover:bg-surface2 transition-colors text-left"
+              onClick={() => { setSheetOpen(false); alert("Custom builder coming soon"); }}
+              className="w-full flex items-center gap-3 p-3 bg-white/5 rounded-[14px] mb-2 border border-white/5 hover:bg-white/10 transition-colors text-left"
             >
-              <div className="w-9 h-9 rounded-[10px] bg-purple-500/18 flex items-center justify-center flex-shrink-0">
+              <div className="w-9 h-9 rounded-[10px] bg-purple-500/20 flex items-center justify-center flex-shrink-0">
                 <Pencil size={18} className="text-purple-400" strokeWidth={2} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-text-primary">
-                  Custom
-                </div>
-                <div className="text-xs text-text-secondary mt-0.5">
-                  Build from scratch, exercise by exercise
-                </div>
+                <div className="text-sm font-semibold text-text-primary">Custom</div>
+                <div className="text-xs text-text-secondary mt-0.5">Build from scratch, exercise by exercise</div>
               </div>
               <ChevronRight size={16} className="text-text-tertiary flex-shrink-0" />
             </button>
 
-            {/* Option 3: Import from link */}
+            {/* Option 3 */}
             <button
-              onClick={() => {
-                setSheetOpen(false);
-                alert("Import from link coming soon");
-              }}
-              className="w-full flex items-center gap-3 p-3 bg-bg rounded-[12px] border border-white/5 hover:bg-surface2 transition-colors text-left"
+              onClick={() => { setSheetOpen(false); alert("Import from link coming soon"); }}
+              className="w-full flex items-center gap-3 p-3 bg-white/5 rounded-[14px] border border-white/5 hover:bg-white/10 transition-colors text-left"
             >
-              <div className="w-9 h-9 rounded-[10px] bg-purple-500/18 flex items-center justify-center flex-shrink-0">
+              <div className="w-9 h-9 rounded-[10px] bg-purple-500/20 flex items-center justify-center flex-shrink-0">
                 <Link2 size={18} className="text-purple-400" strokeWidth={2} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-text-primary">
-                  Import from link
-                </div>
-                <div className="text-xs text-text-secondary mt-0.5">
-                  From a YouTube or social video
-                </div>
+                <div className="text-sm font-semibold text-text-primary">Import from link</div>
+                <div className="text-xs text-text-secondary mt-0.5">From a YouTube or social video</div>
               </div>
               <ChevronRight size={16} className="text-text-tertiary flex-shrink-0" />
             </button>
           </div>
-        </>
+        </div>
       )}
     </>
   );
