@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, ChevronRight, Plus, Dumbbell, Sparkles, Pencil, Link2, X } from "lucide-react";
 import clsx from "clsx";
 import { EXERCISES } from "@/lib/data/exercises";
+import { supabase } from "@/lib/supabase";
+import { ensureUserLibrarySeeded } from "@/lib/data/seedUserRoutines";
 
 const FILTERS = [
   "All",
@@ -38,13 +40,33 @@ const EXERCISE_MUSCLE_FILTERS = [
   { label: "Forearms", value: "forearms" },
 ] as const;
 
-const ROUTINES = [
-  { name: "Push Day", sub: "Chest · Shoulders · Triceps", ex: 6, src: "Custom" },
-  { name: "Pull Day", sub: "Back · Biceps · Rear Delts", ex: 7, src: "Custom" },
-  { name: "Leg Day", sub: "Quads · Hamstrings · Calves", ex: 8, src: "Custom" },
-  { name: "CBum Chest & Shoulders", sub: "Chest · Shoulders", ex: 8, src: "YouTube" },
-  { name: "Jeff Nippard Upper/Lower", sub: "Upper · Lower Split", ex: 6, src: "YouTube" },
-];
+type Routine = {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  difficulty: string;
+  estimated_duration_minutes: number | null;
+  exercises: Array<{
+    exercise_id: string;
+    sets: number;
+    reps: string;
+    rest_seconds: number;
+    order: number;
+    notes?: string;
+  }>;
+  source: string;
+};
+
+function getMuscleFocus(routine: Routine): string {
+  const muscles = new Set<string>();
+  routine.exercises.forEach((ex) => {
+    const match = EXERCISES.find((e) => e.id === ex.exercise_id);
+    if (match) muscles.add(match.primary_muscle);
+  });
+  const list = Array.from(muscles).slice(0, 3);
+  return list.map((m) => m.charAt(0).toUpperCase() + m.slice(1)).join(" · ");
+}
 
 export function LibraryScreen() {
   const [filter, setFilter] = useState("All");
@@ -52,7 +74,43 @@ export function LibraryScreen() {
   const [exerciseQuery, setExerciseQuery] = useState<string>("");
   const [muscleFilter, setMuscleFilter] = useState<string>("all");
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [routines, setRoutines] = useState<Routine[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        await ensureUserLibrarySeeded("demo-user");
+        const { data, error } = await supabase
+          .from("routines")
+          .select("*")
+          .eq("user_id", "demo-user")
+          .order("created_at", { ascending: true });
+        if (cancelled) return;
+        if (error) {
+          console.error("Failed to load routines:", error);
+          setRoutines([]);
+        } else {
+          setRoutines((data ?? []) as Routine[]);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Library load failed:", err);
+          setRoutines([]);
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const filteredExercises = EXERCISES.filter((exercise) => {
     if (muscleFilter !== "all" && exercise.primary_muscle !== muscleFilter) {
@@ -69,6 +127,11 @@ export function LibraryScreen() {
     return true;
   });
   const displayedExercises = filteredExercises.slice(0, 100);
+  const filteredRoutines = routines.filter((r) => {
+    if (filter === "All") return true;
+    const categoryKey = filter.toLowerCase().replace(" ", "_");
+    return r.category === categoryKey;
+  });
 
   return (
     <>
@@ -111,39 +174,54 @@ export function LibraryScreen() {
               New routine
             </button>
 
-            <div className="section-label mb-3">Your Routines — {ROUTINES.length}</div>
-
-            {ROUTINES.map((r) => (
-              <button
-                key={r.name}
-                className="w-full bg-surface rounded-card p-4 mb-2.5 flex items-center gap-3 text-left hover:bg-surface2 transition-colors"
-              >
-                <div className="w-11 h-11 rounded-[10px] bg-surface2 flex items-center justify-center flex-shrink-0">
-                  <Dumbbell
-                    size={18}
-                    className={r.src === "YouTube" ? "text-destructive" : "text-text-tertiary"}
-                    strokeWidth={1.8}
-                  />
+            {isLoading ? (
+              <div className="text-center text-text-tertiary text-sm py-8">
+                Loading your library...
+              </div>
+            ) : filteredRoutines.length === 0 ? (
+              <div className="text-center text-text-tertiary text-sm py-8">
+                No routines in this category yet.
+              </div>
+            ) : (
+              <>
+                <div className="section-label mb-3">
+                  Your Routines — {filteredRoutines.length}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold truncate">{r.name}</div>
-                  <div className="text-xs text-text-tertiary mb-1.5 truncate">
-                    {r.sub}
-                  </div>
-                  <div className="flex gap-2 items-center">
-                    <span className="text-[11px] text-text-tertiary">
-                      {r.ex} exercises
-                    </span>
-                    {r.src === "YouTube" && (
-                      <span className="text-[10px] font-semibold bg-destructive/[0.12] text-destructive px-2 py-0.5 rounded-lg">
-                        YT
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <ChevronRight size={16} className="text-text-placeholder" />
-              </button>
-            ))}
+                {filteredRoutines.map((r) => (
+                  <button
+                    key={r.id}
+                    onClick={() => alert(`${r.name} detail screen coming in Step 7`)}
+                    className="w-full bg-surface rounded-card p-4 mb-2.5 flex items-center gap-3 text-left hover:bg-surface2 transition-colors"
+                  >
+                    <div className="w-11 h-11 rounded-[10px] bg-surface2 flex items-center justify-center flex-shrink-0">
+                      <Dumbbell
+                        size={18}
+                        className="text-text-tertiary"
+                        strokeWidth={1.8}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[15px] font-semibold text-text-primary truncate">
+                        {r.name}
+                      </div>
+                      <div className="text-xs text-text-secondary mt-0.5 truncate">
+                        {getMuscleFocus(r) || "No exercises"}
+                      </div>
+                      <div className="text-xs text-text-tertiary mt-1">
+                        {r.exercises.length} exercises
+                        {r.estimated_duration_minutes
+                          ? ` · ~${r.estimated_duration_minutes} min`
+                          : ""}
+                      </div>
+                    </div>
+                    <ChevronRight
+                      size={18}
+                      className="text-text-tertiary flex-shrink-0"
+                    />
+                  </button>
+                ))}
+              </>
+            )}
           </>
         )}
 
