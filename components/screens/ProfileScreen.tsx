@@ -25,10 +25,21 @@ export function ProfileScreen() {
           <User size={26} className="text-text-tertiary" strokeWidth={1.8} />
         </div>
         <div>
-          <h1 className="text-[22px] font-bold">Alex</h1>
+          <h1 className="text-[22px] font-bold">FORGE</h1>
           <div className="text-[13px] text-text-tertiary mt-0.5">
-            Training since Jan 2024
+            Preview Build · v0.1
           </div>
+        </div>
+      </div>
+
+      <div className="mb-5 pl-3 pr-4 py-3 border-l-2 border-purple-500/50 bg-purple-500/5 rounded-r-[10px]">
+        <div className="text-[10px] font-semibold text-purple-300 uppercase tracking-[0.14em] mb-1">
+          Preview Build
+        </div>
+        <div className="text-[12px] text-text-secondary leading-relaxed">
+          {
+            "You're viewing an early preview of FORGE. Stats below are sample data — real tracking starts when you log your first workout."
+          }
         </div>
       </div>
 
