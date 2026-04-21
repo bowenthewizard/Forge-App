@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { useStore } from "@/lib/store";
 import { EXERCISES } from "@/lib/data/exercises";
 import { useLastPRs } from "@/lib/hooks/useLastPRs";
+import ExercisePicker from "@/components/ExercisePicker";
 
 type RoutineExercise = {
   exercise_id: string;
@@ -61,6 +62,7 @@ export function RoutineDetailScreen() {
   const [setsEditing, setSetsEditing] = useState(false);
   const [repsEditing, setRepsEditing] = useState(false);
   const [restEditing, setRestEditing] = useState(false);
+  const [pickerMode, setPickerMode] = useState<"add" | "substitute" | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -192,6 +194,33 @@ export function RoutineDetailScreen() {
     if (!localExercises) return;
     const updated = localExercises.filter((_: any, i: number) => i !== idx);
     setLocalExercises(updated);
+  }
+
+  function handlePickerSelect(exerciseId: string) {
+    if (!localExercises) {
+      setPickerMode(null);
+      return;
+    }
+
+    if (pickerMode === "add") {
+      const newExercise = {
+        exercise_id: exerciseId,
+        sets: 3,
+        reps: "8-12",
+        rest_seconds: 90,
+        notes: null,
+      };
+      setLocalExercises([...localExercises, newExercise]);
+    } else if (pickerMode === "substitute" && editingIndex !== null) {
+      const updated = [...localExercises];
+      updated[editingIndex] = {
+        ...updated[editingIndex],
+        exercise_id: exerciseId,
+      };
+      setLocalExercises(updated);
+    }
+
+    setPickerMode(null);
   }
 
   if (isLoading) {
@@ -374,7 +403,7 @@ export function RoutineDetailScreen() {
 
       {isEditMode && (
         <button
-          onClick={() => alert("Exercise picker — coming in 7c.3")}
+          onClick={() => setPickerMode("add")}
           className="w-full mb-8 py-3.5 rounded-[14px] border border-dashed border-purple-500/40 hover:border-purple-500/70 hover:bg-purple-500/5 active:scale-[0.99] transition-all inline-flex items-center justify-center gap-2 text-purple-400 hover:text-purple-300 text-[14px] font-semibold"
         >
           <PlusCircle size={16} strokeWidth={2.2} />
@@ -455,7 +484,7 @@ export function RoutineDetailScreen() {
                       </div>
                     </div>
                     <button
-                      onClick={() => alert("Substitute exercise — coming in 7c.3")}
+                      onClick={() => setPickerMode("substitute")}
                       className="flex-shrink-0 w-9 h-9 rounded-full bg-white/5 hover:bg-purple-500/15 border border-white/10 hover:border-purple-500/40 flex items-center justify-center transition-all active:scale-90 text-text-secondary hover:text-purple-300"
                       aria-label="Substitute exercise"
                     >
@@ -596,6 +625,13 @@ export function RoutineDetailScreen() {
           </div>
         </div>
       )}
+
+      <ExercisePicker
+        isOpen={pickerMode !== null}
+        mode={pickerMode ?? "add"}
+        onClose={() => setPickerMode(null)}
+        onSelect={handlePickerSelect}
+      />
     </div>
   );
 }

@@ -58,3 +58,12 @@ input::placeholder {
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
+
+/* Hide scrollbar for native mobile feel while preserving scroll functionality */
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE/Edge legacy */
+  scrollbar-width: none;    /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari, Opera */
+}
