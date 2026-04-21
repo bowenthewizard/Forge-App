@@ -1,12 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, Clock, Dumbbell, GripVertical, Minus, MoreHorizontal, Plus, PlusCircle, Repeat, X } from "lucide-react";
+import { ArrowLeft, Clock, Dumbbell, GripVertical, Minus, Plus, PlusCircle, Repeat } from "lucide-react";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { supabase } from "@/lib/supabase";
 import { useStore } from "@/lib/store";
 import { EXERCISES } from "@/lib/data/exercises";
 import { useLastPRs } from "@/lib/hooks/useLastPRs";
 import ExercisePicker from "@/components/ExercisePicker";
+import SortableItem from "@/components/SortableItem";
+
+function generateSortId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `sort-${Math.random().toString(36).slice(2)}-${Date.now()}`;
+}
 
 type RoutineExercise = {
   exercise_id: string;
@@ -15,6 +32,7 @@ type RoutineExercise = {
   rest_seconds: number;
   order: number;
   notes?: string;
+  _sortId?: string;
 };
 
 type Routine = {
@@ -82,7 +100,18 @@ export function RoutineDetailScreen() {
           console.error("Failed to load routine:", error);
           setRoutine(null);
         } else {
-          setRoutine((data as Routine) ?? null);
+          const routineData = data as Routine | null;
+          if (!routineData) {
+            setRoutine(null);
+          } else {
+            setRoutine({
+              ...routineData,
+              exercises: (routineData.exercises ?? []).map((e: any) => ({
+                ...e,
+                _sortId: e._sortId ?? generateSortId(),
+              })),
+            });
+          }
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -94,7 +123,12 @@ export function RoutineDetailScreen() {
 
   useEffect(() => {
     if (isEditMode && routine) {
-      setLocalExercises(routine.exercises.map((e: any) => ({ ...e })));
+      setLocalExercises(
+        routine.exercises.map((e: any) => ({
+          ...e,
+          _sortId: e._sortId ?? generateSortId(),
+        }))
+      );
     } else if (!isEditMode) {
       setLocalExercises(null);
       setEditingIndex(null);
@@ -115,6 +149,27 @@ export function RoutineDetailScreen() {
 
   const exerciseIds = routine?.exercises.map((e) => e.exercise_id) ?? [];
   const { prs } = useLastPRs("demo-user", exerciseIds);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    })
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !localExercises) return;
+    const oldIndex = localExercises.findIndex((e: any) => e._sortId === active.id);
+    const newIndex = localExercises.findIndex((e: any) => e._sortId === over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const moved = arrayMove(localExercises, oldIndex, newIndex);
+    setLocalExercises(
+      moved.map((exercise: any, index: number) => ({
+        ...exercise,
+        order: index,
+      }))
+    );
+  }
 
   function goBack() {
     setSelectedRoutineId(null);
@@ -149,10 +204,14 @@ export function RoutineDetailScreen() {
   async function handleSaveChanges() {
     if (!routine || !localExercises) return;
     setIsSaving(true);
+    const exercisesToSave = localExercises.map((exercise: any, index: number) => ({
+      ...exercise,
+      order: index,
+    }));
     const { error } = await supabase
       .from("routines")
       .update({
-        exercises: localExercises,
+        exercises: exercisesToSave,
         updated_at: new Date().toISOString(),
       })
       .eq("id", routine.id);
@@ -164,7 +223,7 @@ export function RoutineDetailScreen() {
       return;
     }
 
-    setRoutine({ ...routine, exercises: localExercises });
+    setRoutine({ ...routine, exercises: exercisesToSave });
     setIsEditMode(false);
     setIsSaving(false);
   }
@@ -209,6 +268,8 @@ export function RoutineDetailScreen() {
         reps: "8-12",
         rest_seconds: 90,
         notes: null,
+        order: localExercises.length,
+        _sortId: generateSortId(),
       };
       setLocalExercises([...localExercises, newExercise]);
     } else if (pickerMode === "substitute" && editingIndex !== null) {
@@ -303,103 +364,118 @@ export function RoutineDetailScreen() {
         <div className="text-[11px] text-text-tertiary">{displayExercises.length}</div>
       </div>
 
-      <div className="space-y-2.5 mb-8">
-        {displayExercises.map((ex, idx) => {
-          const exerciseData = EXERCISES.find((e) => e.id === ex.exercise_id);
-          const thumbnail = exerciseData?.image_urls?.[0];
-          const name = exerciseData?.name ?? ex.exercise_id;
-          const muscle = exerciseData?.primary_muscle ?? "";
-          const equipment = exerciseData?.equipment ?? "";
-          const lastPR = prs.get(ex.exercise_id);
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext
+          items={displayExercises.map((e: any) => e._sortId)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="space-y-2.5 mb-8">
+            {displayExercises.map((ex: any, idx: number) => {
+              const sortId = ex._sortId as string;
+              const exerciseData = EXERCISES.find((e) => e.id === ex.exercise_id);
+              const thumbnail = exerciseData?.image_urls?.[0];
+              const name = exerciseData?.name ?? ex.exercise_id;
+              const muscle = exerciseData?.primary_muscle ?? "";
+              const equipment = exerciseData?.equipment ?? "";
+              const lastPR = prs.get(ex.exercise_id);
 
-          return (
-            <div
-              key={idx}
-              onClick={isEditMode ? () => setEditingIndex(idx) : undefined}
-              className={`bg-surface rounded-[16px] p-3.5 flex items-start gap-3.5 ${
-                isEditMode ? "cursor-pointer hover:bg-surface2 active:scale-[0.995] transition-all" : ""
-              }`}
-            >
-              <div className="relative flex-shrink-0">
-                {thumbnail ? (
-                  <img
-                    src={thumbnail}
-                    alt={name}
-                    className="w-[72px] h-[72px] rounded-[14px] object-cover bg-surface2"
-                  />
-                ) : (
-                  <div className="w-[72px] h-[72px] rounded-[14px] bg-surface2" />
-                )}
-                {!isEditMode ? (
-                  <div className="absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full bg-bg border border-white/10 flex items-center justify-center">
-                    <span className="text-[11px] font-bold text-text-primary">{idx + 1}</span>
-                  </div>
-                ) : (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteExercise(idx);
-                    }}
-                    className="absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full bg-bg border border-white/15 hover:border-red-500/60 hover:bg-red-500/15 active:scale-90 flex items-center justify-center transition-all z-10 group"
-                    aria-label="Remove exercise"
-                  >
-                    <Minus size={13} strokeWidth={2.5} className="text-text-tertiary group-hover:text-red-400 transition-colors" />
-                  </button>
-                )}
-              </div>
+              return (
+                <SortableItem key={sortId} id={sortId} disabled={!isEditMode}>
+                  {({ setNodeRef, style, listeners, attributes, isDragging }) => (
+                    <div
+                      ref={setNodeRef}
+                      style={style}
+                      onClick={isEditMode ? () => setEditingIndex(idx) : undefined}
+                      className={`bg-surface rounded-[16px] p-3.5 flex items-start gap-3.5 ${
+                        isEditMode ? "cursor-pointer hover:bg-surface2 active:scale-[0.995] transition-all" : ""
+                      } ${isDragging ? "shadow-2xl ring-2 ring-purple-500/40" : ""}`}
+                    >
+                      <div className="relative flex-shrink-0">
+                        {thumbnail ? (
+                          <img
+                            src={thumbnail}
+                            alt={name}
+                            className="w-[72px] h-[72px] rounded-[14px] object-cover bg-surface2"
+                          />
+                        ) : (
+                          <div className="w-[72px] h-[72px] rounded-[14px] bg-surface2" />
+                        )}
+                        {!isEditMode ? (
+                          <div className="absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full bg-bg border border-white/10 flex items-center justify-center">
+                            <span className="text-[11px] font-bold text-text-primary">{idx + 1}</span>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteExercise(idx);
+                            }}
+                            className="absolute -top-1.5 -left-1.5 w-6 h-6 rounded-full bg-bg border border-white/15 hover:border-red-500/60 hover:bg-red-500/15 active:scale-90 flex items-center justify-center transition-all z-10 group"
+                            aria-label="Remove exercise"
+                          >
+                            <Minus size={13} strokeWidth={2.5} className="text-text-tertiary group-hover:text-red-400 transition-colors" />
+                          </button>
+                        )}
+                      </div>
 
-              <div className="flex-1 min-w-0 pt-0.5">
-                <div className="text-[15px] font-semibold text-text-primary leading-snug">{name}</div>
-                {(muscle || equipment) && (
-                  <div className="text-[11px] text-text-tertiary mt-0.5">
-                    {muscle && muscle.charAt(0).toUpperCase() + muscle.slice(1)}
-                    {muscle && equipment && " · "}
-                    {equipment && equipment.charAt(0).toUpperCase() + equipment.slice(1)}
-                  </div>
-                )}
+                      <div className="flex-1 min-w-0 pt-0.5">
+                        <div className="text-[15px] font-semibold text-text-primary leading-snug">{name}</div>
+                        {(muscle || equipment) && (
+                          <div className="text-[11px] text-text-tertiary mt-0.5">
+                            {muscle && muscle.charAt(0).toUpperCase() + muscle.slice(1)}
+                            {muscle && equipment && " · "}
+                            {equipment && equipment.charAt(0).toUpperCase() + equipment.slice(1)}
+                          </div>
+                        )}
 
-                <div className="flex items-center justify-between gap-2 mt-2.5">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="inline-flex items-center text-[12px] text-text-secondary font-semibold tracking-tight whitespace-nowrap flex-shrink-0">
-                      {ex.sets} × {ex.reps}
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-[11px] text-text-tertiary whitespace-nowrap">
-                      <Clock size={11} strokeWidth={2} />
-                      {formatRest(ex.rest_seconds)}
-                    </span>
-                  </div>
+                        <div className="flex items-center justify-between gap-2 mt-2.5">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="inline-flex items-center text-[12px] text-text-secondary font-semibold tracking-tight whitespace-nowrap flex-shrink-0">
+                              {ex.sets} × {ex.reps}
+                            </span>
+                            <span className="inline-flex items-center gap-1 text-[11px] text-text-tertiary whitespace-nowrap">
+                              <Clock size={11} strokeWidth={2} />
+                              {formatRest(ex.rest_seconds)}
+                            </span>
+                          </div>
 
-                  {prs.get(ex.exercise_id) && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] bg-purple-500/15 border border-purple-400/30 flex-shrink-0">
-                      <span className="text-[9px] font-bold text-purple-300 uppercase tracking-[0.1em]">
-                        PR
-                      </span>
-                      <span className="text-[12px] font-bold text-purple-100 tracking-tight whitespace-nowrap">
-                        {prs.get(ex.exercise_id)!.weight} × {prs.get(ex.exercise_id)!.reps}
-                      </span>
-                    </span>
+                          {prs.get(ex.exercise_id) && (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] bg-purple-500/15 border border-purple-400/30 flex-shrink-0">
+                              <span className="text-[9px] font-bold text-purple-300 uppercase tracking-[0.1em]">
+                                PR
+                              </span>
+                              <span className="text-[12px] font-bold text-purple-100 tracking-tight whitespace-nowrap">
+                                {prs.get(ex.exercise_id)!.weight} × {prs.get(ex.exercise_id)!.reps}
+                              </span>
+                            </span>
+                          )}
+                        </div>
+
+                        {ex.notes && (
+                          <div className="mt-2.5 pl-2.5 border-l-2 border-purple-500/40 text-[12px] text-text-secondary italic leading-relaxed">
+                            {ex.notes}
+                          </div>
+                        )}
+                      </div>
+                      {isEditMode && (
+                        <div
+                          {...attributes}
+                          {...listeners}
+                          className="flex-shrink-0 self-center pl-1 pr-1 cursor-grab active:cursor-grabbing text-text-tertiary hover:text-text-primary transition-colors touch-none"
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label="Drag to reorder"
+                        >
+                          <GripVertical size={22} strokeWidth={2.2} />
+                        </div>
+                      )}
+                    </div>
                   )}
-                </div>
-
-                {ex.notes && (
-                  <div className="mt-2.5 pl-2.5 border-l-2 border-purple-500/40 text-[12px] text-text-secondary italic leading-relaxed">
-                    {ex.notes}
-                  </div>
-                )}
-              </div>
-              {isEditMode && (
-                <div
-                  className="flex-shrink-0 self-center pl-1 pr-1 cursor-grab active:cursor-grabbing text-text-tertiary hover:text-text-primary transition-colors"
-                  onClick={(e) => e.stopPropagation()}
-                  aria-label="Drag to reorder"
-                >
-                  <GripVertical size={22} strokeWidth={2.2} />
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                </SortableItem>
+              );
+            })}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       {isEditMode && (
         <button
