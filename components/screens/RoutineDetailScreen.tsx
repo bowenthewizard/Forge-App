@@ -5,6 +5,7 @@ import { ArrowLeft, Clock, Dumbbell, MoreHorizontal, PlusCircle } from "lucide-r
 import { supabase } from "@/lib/supabase";
 import { useStore } from "@/lib/store";
 import { EXERCISES } from "@/lib/data/exercises";
+import { useLastPRs } from "@/lib/hooks/useLastPRs";
 
 type RoutineExercise = {
   exercise_id: string;
@@ -78,6 +79,9 @@ export function RoutineDetailScreen() {
     load();
     return () => { cancelled = true; };
   }, [selectedRoutineId]);
+
+  const exerciseIds = routine?.exercises.map((e) => e.exercise_id) ?? [];
+  const { prs } = useLastPRs("demo-user", exerciseIds);
 
   function goBack() {
     setSelectedRoutineId(null);
@@ -162,6 +166,7 @@ export function RoutineDetailScreen() {
           const name = exerciseData?.name ?? ex.exercise_id;
           const muscle = exerciseData?.primary_muscle ?? "";
           const equipment = exerciseData?.equipment ?? "";
+          const lastPR = prs.get(ex.exercise_id);
 
           return (
             <div key={idx} className="bg-surface rounded-[16px] p-3.5 flex items-start gap-3.5">
@@ -201,6 +206,14 @@ export function RoutineDetailScreen() {
                     {formatRest(ex.rest_seconds)}
                   </span>
                 </div>
+                {prs.get(ex.exercise_id) && (
+                  <span className="text-[11px] text-text-secondary whitespace-nowrap flex-shrink-0 mt-1.5 block">
+                    <span className="text-text-tertiary">Last PR </span>
+                    <span className="font-semibold text-text-primary">
+                      {prs.get(ex.exercise_id)!.weight} × {prs.get(ex.exercise_id)!.reps}
+                    </span>
+                  </span>
+                )}
 
                 {ex.notes && (
                   <div className="mt-2.5 pl-2.5 border-l-2 border-purple-500/40 text-[12px] text-text-secondary italic leading-relaxed">
