@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { EXERCISES } from "@/lib/data/exercises";
 import { supabase } from "@/lib/supabase";
 import { ensureUserLibrarySeeded } from "@/lib/data/seedUserRoutines";
+import { useStore } from "@/lib/store";
 
 const FILTERS = [
   "All",
@@ -76,6 +77,8 @@ export function LibraryScreen() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const setSelectedRoutineId = useStore((s) => s.setSelectedRoutineId);
+  const setTab = useStore((s) => s.setTab);
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
   useEffect(() => {
@@ -190,7 +193,10 @@ export function LibraryScreen() {
                 {filteredRoutines.map((r) => (
                   <button
                     key={r.id}
-                    onClick={() => alert(`${r.name} detail screen coming in Step 7`)}
+                    onClick={() => {
+                      setSelectedRoutineId(r.id);
+                      setTab("routine-detail" as never);
+                    }}
                     className="w-full bg-surface rounded-card p-4 mb-2.5 flex items-center gap-3 text-left hover:bg-surface2 transition-colors"
                   >
                     <div className="w-11 h-11 rounded-[10px] bg-surface2 flex items-center justify-center flex-shrink-0">

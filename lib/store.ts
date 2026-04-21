@@ -50,6 +50,8 @@ type StoreState = {
   // Navigation
   tab: Tab;
   setTab: (tab: Tab) => void;
+  selectedRoutineId: string | null;
+  setSelectedRoutineId: (id: string | null) => void;
 
   // Workout state
   workoutName: string;
@@ -84,6 +86,8 @@ export const useStore = create<StoreState>((set, get) => ({
   // Nav
   tab: "home",
   setTab: (tab) => set({ tab }),
+  selectedRoutineId: null,
+  setSelectedRoutineId: (id) => set({ selectedRoutineId: id }),
 
   // Workout
   workoutName: "Push Day",

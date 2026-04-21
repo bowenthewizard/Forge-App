@@ -6,6 +6,7 @@ import { RestTimerMini } from "@/components/RestTimerMini";
 import { HomeScreen } from "@/components/screens/HomeScreen";
 import { WorkoutScreen } from "@/components/screens/WorkoutScreen";
 import { LibraryScreen } from "@/components/screens/LibraryScreen";
+import { RoutineDetailScreen } from "@/components/screens/RoutineDetailScreen";
 import { ProfileScreen } from "@/components/screens/ProfileScreen";
 import { PostWorkoutSummaryScreen } from "@/components/screens/PostWorkoutSummaryScreen";
 import { useStore } from "@/lib/store";
@@ -22,12 +23,13 @@ export default function Page() {
         {tab === "home" && <HomeScreen />}
         {(tab === "workout" || tab === "workout-logging") && <WorkoutScreen />}
         {tab === "library" && <LibraryScreen />}
+        {(tab as string) === "routine-detail" && <RoutineDetailScreen />}
         {tab === "profile" && <ProfileScreen />}
         {tab === "summary" && <PostWorkoutSummaryScreen />}
       </div>
 
       <RestTimerMini />
-      {tab !== "summary" && <TabBar />}
+      {tab !== "summary" && (tab as string) !== "routine-detail" && <TabBar />}
     </main>
   );
 }
