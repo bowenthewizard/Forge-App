@@ -131,7 +131,7 @@ export function RoutineDetailScreen() {
       <h1 className="text-[32px] font-bold leading-tight tracking-tight mb-3">{routine.name}</h1>
 
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/25 uppercase tracking-wider">
+        <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-transparent text-white/90 border border-white/30 uppercase tracking-wider">
           {formatCategory(routine.category)}
         </span>
         <span className="text-[11px] text-text-tertiary uppercase tracking-wider">
@@ -195,25 +195,28 @@ export function RoutineDetailScreen() {
                   </div>
                 )}
 
-                <div className="flex items-center gap-2.5 mt-2.5">
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-[8px] bg-purple-500/12 border border-purple-500/20">
-                    <span className="text-[12px] font-bold text-purple-200 tracking-tight">
+                <div className="flex items-center justify-between gap-2 mt-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="inline-flex items-center text-[12px] text-text-secondary font-semibold tracking-tight whitespace-nowrap flex-shrink-0">
                       {ex.sets} × {ex.reps}
                     </span>
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-[11px] text-text-tertiary">
-                    <Clock size={11} strokeWidth={2} />
-                    {formatRest(ex.rest_seconds)}
-                  </span>
-                </div>
-                {prs.get(ex.exercise_id) && (
-                  <span className="text-[11px] text-text-secondary whitespace-nowrap flex-shrink-0 mt-1.5 block">
-                    <span className="text-text-tertiary">Last PR </span>
-                    <span className="font-semibold text-text-primary">
-                      {prs.get(ex.exercise_id)!.weight} × {prs.get(ex.exercise_id)!.reps}
+                    <span className="inline-flex items-center gap-1 text-[11px] text-text-tertiary whitespace-nowrap">
+                      <Clock size={11} strokeWidth={2} />
+                      {formatRest(ex.rest_seconds)}
                     </span>
-                  </span>
-                )}
+                  </div>
+
+                  {prs.get(ex.exercise_id) && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-[8px] bg-purple-500/15 border border-purple-400/30 flex-shrink-0">
+                      <span className="text-[9px] font-bold text-purple-300 uppercase tracking-[0.1em]">
+                        PR
+                      </span>
+                      <span className="text-[12px] font-bold text-purple-100 tracking-tight whitespace-nowrap">
+                        {prs.get(ex.exercise_id)!.weight} × {prs.get(ex.exercise_id)!.reps}
+                      </span>
+                    </span>
+                  )}
+                </div>
 
                 {ex.notes && (
                   <div className="mt-2.5 pl-2.5 border-l-2 border-purple-500/40 text-[12px] text-text-secondary italic leading-relaxed">
